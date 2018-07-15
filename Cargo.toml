@@ -1,0 +1,6 @@
+[package]
+name = "flickr_migrator"
+version = "0.1.0"
+authors = ["adorechic <adorechic@gmail.com>"]
+
+[dependencies]

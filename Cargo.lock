@@ -1,0 +1,4 @@
+[[package]]
+name = "flickr_migrator"
+version = "0.1.0"
+

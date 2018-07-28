@@ -4,6 +4,10 @@ use std::fs::File;
 use std::io::prelude::*;
 
 fn main() {
+    fetch_photos()
+}
+
+fn fetch_photos() {
     let mut file = File::open("./api_key").expect("File not found");
     let mut api_key = String::new();
     file.read_to_string(&mut api_key).expect("Read error");

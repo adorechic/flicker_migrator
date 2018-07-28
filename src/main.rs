@@ -2,9 +2,18 @@ extern crate reqwest;
 
 use std::fs::File;
 use std::io::prelude::*;
+use std::env;
 
 fn main() {
-    fetch_photos()
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        panic!("Please subcommand fetch");
+    }
+
+    match args[1].as_ref() {
+        "fetch" => fetch_photos(),
+        _         => panic!("Unknown command: {}, Use fetch", args[1]),
+    }
 }
 
 fn fetch_photos() {

@@ -12,6 +12,7 @@ fn main() {
 
     match args[1].as_ref() {
         "fetch" => fetch_photos(),
+        "auth" => auth(),
         _         => panic!("Unknown command: {}, Use fetch", args[1]),
     }
 }
@@ -24,4 +25,8 @@ fn fetch_photos() {
     let body = reqwest::get(&uri).unwrap().text();
 
     println!("body = {:?}", body);
+}
+
+fn auth() {
+    println!("auth!")
 }

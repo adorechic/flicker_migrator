@@ -60,24 +60,19 @@ fn auth() {
         ("oauth_version", "1.0".to_owned()),
         ("oauth_callback", "http%3A%2F%2Flocalhost".to_owned())
     ];
-    let base = query.iter()
-        .map(|(k, v)| format!("{}={}", k, v))
-        .fold(
-            String::from("GET&https%3A%2F%2Fwww.flickr.com%2Fservices%2Foauth%2Frequest_token?"),
-            |acc, q| format!("{}&{}", acc, q)
-        );
+    let query_string = query.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join("&");
+    let base = format!("{}?{}", 
+        "GET&https%3A%2F%2Fwww.flickr.com%2Fservices%2Foauth%2Frequest_token",
+        query_string
+    );
     let sign_key = format!("{}?", consumer_key);
     let signing_key = hmac::SigningKey::new(&digest::SHA1, sign_key.as_bytes());
     let signature = hmac::sign(&signing_key, base.as_bytes());
     let oauth_signature = base64::encode(signature.as_ref());
     let mut q = query.to_vec();
     q.push(("oauth_signature", oauth_signature));
-    let url = q.iter().map(|(k, v)| format!("{}={}", k, v))
-    .fold(
-            String::from("https://www.flickr.com/services/oauth/request_token?"),
-            |acc, q| format!("{}&{}", acc, q)
-        );
-
+    let q_string = q.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join("&");
+    let url = format!("{}?{}", "https://www.flickr.com/services/oauth/request_token", q_string);
     println!("url = {}", url);
     let body = reqwest::get(&url).unwrap().text();
 

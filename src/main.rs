@@ -1,15 +1,15 @@
 extern crate reqwest;
-extern crate rand;
 extern crate time;
-extern crate ring;
 extern crate base64;
+extern crate crypto;
 
 use std::fs::File;
 use std::io::prelude::*;
 use std::env;
 use reqwest::Url;
-use rand::Rng;
-use ring::{digest, hmac};
+use crypto::sha1::Sha1;
+use crypto::hmac::Hmac;
+use crypto::mac::Mac;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -43,38 +43,46 @@ fn fetch_photos() {
 
 fn auth() {
     println!("auth!");
-    let nonce = rand::thread_rng()
-        .gen_ascii_chars()
-        .take(32)
-        .collect::<String>();
+    let nonce = String::from("89601180");
     let timestamp = format!("{}", time::now_utc().to_timespec().sec);
     let mut file = File::open("./api_key").expect("File not found");
+    let mut secret_file = File::open("./consumer_secret").expect("File not found");
     let mut api_key = String::new();
+    let mut consumer_secret = String::new();
     file.read_to_string(&mut api_key).expect("Read error");
+    secret_file.read_to_string(&mut consumer_secret).expect("read error");
     let consumer_key = &api_key;
     let query = &[
-        ("oauth_nonce", nonce),
-        ("oauth_timestamp", timestamp),
+        ("oauth_callback", "http%253A%252F%252Flocalhost".to_owned()),
         ("oauth_consumer_key", consumer_key.to_owned()),
+        ("oauth_nonce", nonce.to_string()),
         ("oauth_signature_method", "HMAC-SHA1".to_owned()),
-        ("oauth_version", "1.0".to_owned()),
-        ("oauth_callback", "http%3A%2F%2Flocalhost".to_owned())
+        ("oauth_timestamp", timestamp.to_string()),
+        ("oauth_version", "1.0".to_owned())
     ];
-    let query_string = query.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join("&");
-    let base = format!("{}?{}", 
+    let query_string = query.iter().map(|(k, v)| format!("{}%3D{}", k, v)).collect::<Vec<_>>().join("%26");
+    let base = format!("{}&{}", 
         "GET&https%3A%2F%2Fwww.flickr.com%2Fservices%2Foauth%2Frequest_token",
         query_string
     );
-    let sign_key = format!("{}?", consumer_key);
-    let signing_key = hmac::SigningKey::new(&digest::SHA1, sign_key.as_bytes());
-    let signature = hmac::sign(&signing_key, base.as_bytes());
-    let oauth_signature = base64::encode(signature.as_ref());
-    let mut q = query.to_vec();
-    q.push(("oauth_signature", oauth_signature));
-    let q_string = q.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join("&");
-    let url = format!("{}?{}", "https://www.flickr.com/services/oauth/request_token", q_string);
-    println!("url = {}", url);
-    let body = reqwest::get(&url).unwrap().text();
 
+    let key = format!("{}&", consumer_secret);
+    let mut hmac = Hmac::new(Sha1::new(), key.as_bytes());
+    hmac.input(base.as_bytes());
+    let oauth_signature = base64::encode(hmac.result().code());
+    let q = &[
+        ("oauth_callback", "http%3A%2F%2Flocalhost".to_owned()),
+        ("oauth_consumer_key", consumer_key.to_owned()),
+        ("oauth_nonce", nonce),
+        ("oauth_signature_method", "HMAC-SHA1".to_owned()),
+        ("oauth_timestamp", timestamp),
+        ("oauth_version", "1.0".to_owned())
+    ];
+    let q_string = q.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join("&");
+    let url_str = format!("{}?{}", "https://www.flickr.com/services/oauth/request_token", q_string);
+   
+    let mut url = Url::parse(&url_str).unwrap();
+    url.query_pairs_mut().append_pair("oauth_signature", &oauth_signature);
+    let body = reqwest::get(url).unwrap().text();
     println!("body = {:?}", body);
 }

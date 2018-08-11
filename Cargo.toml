@@ -5,7 +5,6 @@ authors = ["adorechic <adorechic@gmail.com>"]
 
 [dependencies]
 reqwest = "*"
-rand = "*"
 time = "*"
-ring = "*"
 base64 = "*"
+rust-crypto = "*"

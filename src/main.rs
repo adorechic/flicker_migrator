@@ -25,9 +25,7 @@ fn main() {
 }
 
 fn fetch_photos() {
-    let mut file = File::open("./api_key").expect("File not found");
-    let mut api_key = String::new();
-    file.read_to_string(&mut api_key).expect("Read error");
+    let api_key = read_file("./api_key".to_string());
     let url = Url::parse_with_params(
         "https://api.flickr.com/services/rest/",
         &[
@@ -41,17 +39,19 @@ fn fetch_photos() {
     println!("body = {:?}", body);
 }
 
+fn read_file(path: String) -> String {
+    let mut file = File::open(path).expect("File not found");
+    let mut s = String::new();
+    file.read_to_string(&mut s).expect("Read error");
+    return s;
+}
+
 fn auth() {
     println!("auth!");
     let nonce = String::from("89601180");
     let timestamp = format!("{}", time::now_utc().to_timespec().sec);
-    let mut file = File::open("./api_key").expect("File not found");
-    let mut secret_file = File::open("./consumer_secret").expect("File not found");
-    let mut api_key = String::new();
-    let mut consumer_secret = String::new();
-    file.read_to_string(&mut api_key).expect("Read error");
-    secret_file.read_to_string(&mut consumer_secret).expect("read error");
-    let consumer_key = &api_key;
+    let consumer_key = read_file("./api_key".to_string());
+    let consumer_secret = read_file("./consumer_secret".to_string());
     let query = &[
         ("oauth_callback", "http%253A%252F%252Flocalhost".to_owned()),
         ("oauth_consumer_key", consumer_key.to_owned()),
